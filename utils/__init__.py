@@ -1,1 +1,1 @@
-__all__=['BitOperations', 'IO']
+__all__=['BitOperations', 'IO', 'ProbeChoice']
