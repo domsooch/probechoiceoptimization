@@ -28,7 +28,7 @@ def str_reverse(s):
     s.reverse()
     return ''.join(s)
 
-DEBUG=True
+DEBUG=False
 class BitArray:
     def __init__(self, size, label='', data_packet=[]):
         self.label = label
@@ -103,6 +103,37 @@ class BitArray:
         for a in range(len(other.array)):
             o.array[a] = (self.array[a])^(other.array[a])
         return o
+    #All comparisons are weird they are good for deduping but sorts will be weird
+    def __lt__(self, other):
+        assert (len(other.array) == len(self.array))
+        for a in range(len(other.array)):
+            if self.array[a] >= other.array[a]:return False
+        return True
+    def __le__(self, other):
+        assert (len(other.array) == len(self.array))
+        for a in range(len(other.array)):
+            if self.array[a] > other.array[a]:return False
+        return True
+    def __eq__(self, other):
+        assert (len(other.array) == len(self.array))
+        for a in range(len(other.array)):
+            if self.array[a] != other.array[a]:return False
+        return Truekjhkj
+    def __ne__(self, other):
+        assert (len(other.array) == len(self.array))
+        for a in range(len(other.array)):
+            if self.array[a] == other.array[a]:return False
+        return True
+    def __gt__(self, other):
+        assert (len(other.array) == len(self.array))
+        for a in range(len(other.array)):
+            if self.array[a] <= other.array[a]:return False
+        return True
+    def __ge__(self, other):
+        assert (len(other.array) == len(self.array))
+        for a in range(len(other.array)):
+            if self.array[a] < other.array[a]:return False
+        return True
     def cleanCopy(self):
         """Makes an empty copy or self"""
         return BitArray(self.max, label=self.label, data_packet=self.data_packet)
