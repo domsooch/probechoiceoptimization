@@ -107,7 +107,7 @@ def ComputeProteinClusters(proteinLst, probeset_bf):
 
     
 def ComputeProteinClusters_DoesNotWork(proteinLst, probeset_bf):
-    #ToDo: fin efficient/correct way to sort bitfields 
+    #ToDo: find efficient/correct way to sort bitfields 
     """This function computes the number of clusters 
     given a set of proteins and choice of probes"""
     proteinprobehit_bfLst=[]
