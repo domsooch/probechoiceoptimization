@@ -39,21 +39,25 @@ class BitArray:
         self.array = [mask for i in range(self.array_sz)]
         self.bf_size=self.array_sz*64
         self.debugLst = []
-    def __getitem__(self, offset):
-        return self.array[int(offset/64)] & (1 << offset%64)
-    def __setitem__(self, offset, m):
+    def __getitem__(self, loc):
+        offset=loc%64
+        pos=int(loc/64)
+        return 1 if self.array[pos] & (1 << offset) else 0
+    def __setitem__(self, loc, m):
+        offset=loc%64
+        pos=int(loc/64)
         if DEBUG:
-            if not(offset in self.debugLst):
+            if not(loc in self.debugLst):
                 if m:
-                    self.debugLst.append(offset)
+                    self.debugLst.append(loc)
                     self.debugLst.sort()
                 else:
-                    if offset in self.debugLst:
-                        del self.debugLst[self.debugLst.index(offset)]
+                    if loc in self.debugLst:
+                        del self.debugLst[self.debugLst.index(loc)]
         if m:
-            self.array[int(offset/64)] = self.array[int(offset/64)] | (1 << offset%64)
+            self.array[pos] = self.array[pos] | (1 << offset)
         else:
-            self.array[int(offset/64)] = self.array[int(offset/64)] & ~(1 << offset%64)
+            self.array[pos] = self.array[pos] & ~(1 << offset)
     def count(self):
         count = 0
         for idx in range(self.array_sz):
@@ -65,26 +69,26 @@ class BitArray:
     def debug_count(self):
         count = 0
         for idx in range(self.array_sz):
-            int_type = self.array[idx]
-            while(int_type):
-                count += (int_type & 1)
-                int_type >>= 1
+            int_val = self.array[idx]
+            while(int_val):
+                count += (int_val & 1)
+                int_val >>= 1
         if DEBUG:
             assert(len(self.debugLst)==count)
         return count
-    def clearBits(self, offsetOrLst):
-        if type(offsetOrLst)==type(0):
-            offsetOrLst=[offsetOrLst]
-        for offset in offsetOrLst:
+    def clearBits(self, locOrLst):
+        if type(locOrLst)==type(0):
+            locOrLst=[locOrLst]
+        for loc in locOrLst:
             if DEBUG:
                 if offset in self.debugLst:
                     del self.debugLst[self.debugLst.index(offset)]
-            self.array[int(offset/64)] = self.array[int(offset/64)] & ~(1 << offset%64)
-    def setBits(self, offsetOrLst):
-        if type(offsetOrLst)==type(0):
-            offsetOrLst=[offsetOrLst]
-        for offset in offsetOrLst:
-            self[offset]=1
+            self[loc]=0
+    def setBits(self, locOrLst):
+        if type(locOrLst)==type(0):
+            locOrLst=[locOrLst]
+        for loc in locOrLst:
+            self[loc]=1
     def __and__(self, other):
         assert (len(other.array) == len(self.array))
         o = self.cleanCopy()
@@ -103,22 +107,21 @@ class BitArray:
         for a in range(len(other.array)):
             o.array[a] = (self.array[a])^(other.array[a])
         return o
-    #All comparisons are weird they are good for deduping but sorts will be weird
     def __lt__(self, other):
         assert (len(other.array) == len(self.array))
         for a in range(len(other.array)):
-            if self.array[a] >= other.array[a]:return False
+            if bin(self.array[a]) >= bin(other.array[a]):return False
         return True
     def __le__(self, other):
         assert (len(other.array) == len(self.array))
         for a in range(len(other.array)):
-            if self.array[a] > other.array[a]:return False
+            if bin(self.array[a]) > bin(other.array[a]):return False
         return True
     def __eq__(self, other):
         assert (len(other.array) == len(self.array))
         for a in range(len(other.array)):
             if self.array[a] != other.array[a]:return False
-        return Truekjhkj
+        return True
     def __ne__(self, other):
         assert (len(other.array) == len(self.array))
         for a in range(len(other.array)):
@@ -127,12 +130,12 @@ class BitArray:
     def __gt__(self, other):
         assert (len(other.array) == len(self.array))
         for a in range(len(other.array)):
-            if self.array[a] <= other.array[a]:return False
+            if bin(self.array[a]) <= bin(other.array[a]):return False
         return True
     def __ge__(self, other):
         assert (len(other.array) == len(self.array))
         for a in range(len(other.array)):
-            if self.array[a] < other.array[a]:return False
+            if bin(self.array[a]) < bin(other.array[a]):return False
         return True
     def cleanCopy(self):
         """Makes an empty copy or self"""
@@ -161,13 +164,6 @@ class BitArray:
         assert (len(other.array) == len(self.array))
         for a in range(len(other.array)):
             self.array[a] = self.array[a]^other.array[a]
-    def testBit(self, offset):
-        idx, mask = self.find_bit(offset)
-        return self.array[idx] & mask
-    def find_bit(self, offset, m=1):
-        idx = int(offset/64)
-        mask = m << offset%64
-        return idx, mask
     def exportfp(self, fp):
         oLst = [self.label, self.max] +['\t'.join([str(d) for d in self.data_packet])] +  self.array
         buff = '\n'.join([str(x) for x in oLst])
@@ -197,7 +193,7 @@ class BitArray:
     def export_bit_idxLst(self):
         l = []
         for offset in range(self.max+1):
-            if self.testBit(offset):
+            if self[offset]:
                 l.append(offset)
         return l
     def __str__(self):
@@ -214,16 +210,17 @@ class BitArray:
             b_str=bin(self.array[idx])[2:]
             b_str='0'*(64-len(b_str))+b_str
             sLst.append(str_reverse(b_str))
-        b=''.join(sLst)
+        b='|'.join(sLst)[:self.max]
         return b
     def test(self):
         bin_str=self.bin_str()
-        print('export_bit_idxLst', self.export_bit_idxLst(), '\n',
-              'filter(lambda i:self[i]', list(filter(lambda i:self[i]!=0, range(self.max+1))),'\n',
-              'self.debugLst', self.debugLst, '\n',
+        print('export_bit_idxLst', '\n', self.export_bit_idxLst(), '\n',
+              'filter(lambda i:self[i]', '\n', list(filter(lambda i:self[i]!=0, range(self.max+1))),'\n',
+              'self.debugLst', '\n', self.debugLst, '\n',
               'count', self.debug_count(), '\n',
-              'bin_str()', bin_str, '\n',
-              'count(bin_str)', sum([int(x) for x in list(bin_str)]), '\n',
+              'bin_str()', '\n', bin_str, '\n',
+              'count(bin_str)', sum([int(x) if x.isdigit() else 0 for x in list(bin_str)]), '\n',
+              'count(object)', sum([self[x] for x in range(self.max+1)]), '\n',
               self.array)
 
 #This version uses a single bitfield built from an int, but it is at least 4x slower
@@ -422,8 +419,7 @@ class Genome_BitArray(BitArray):
         print ('saved ', opath)
      
         
-        
-        
+       
 if __name__ == "__main__":
     pass
     
